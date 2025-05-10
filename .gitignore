@@ -3,6 +3,8 @@
 
 .vscode/
 build/
+sdkconfig/
+sdkconfig.old/
 
 ### Windows ###
 # Windows thumbnail cache files
