@@ -9,13 +9,23 @@
 
 static const char *TAG = "dual_foc";
 
-#define MCPWM_TIMER_RESOLUTION_HZ 10000000 // 10MHz
-#define MCPWM_PERIOD        1000     // 10KHz PWM
+// tick rate of clock, 10MHz
+#define MCPWM_TIMER_RESOLUTION_HZ 10000000
 
-#define FOC_WAVE_FREQ    1000         // 50Hz 3 phase AC wave actual freq = resolution / FOC_WAVE_FREQ
-//This value is inversely proportional to the FOC wave frequency
+// length of pwm period, period = resolution / MCPWM_PERIOD = 10KHz
+// MCPWM_PERIOD is how many ticks per period
+// do not change, necessary in init setup
+#define MCPWM_PERIOD        1000
+
+// wave frequency, frequency in Hz
+#define FOC_WAVE_FREQ    50     
+
+// amplitude, should only affect torque not speed
+// can't be greater than period/2, otherwise overlapping high/low = shootthrough
 #define FOC_WAVE_AMPL    50        // Wave amplitude, Use up-down timer mode, max value should be (MCPWM_PERIOD/2) 
 //The actual FOC wave frequency appears to be proportional to this value.
+
+// freq = 50, amplt = 50 is same slow moving as before
 
 // Inverter 1 GPIO definitions
 #define FOC1_PWM_UH_GPIO 13
@@ -140,7 +150,7 @@ void app_main(void)
     {
         if (xSemaphoreTake(semaphore_inv1, portMAX_DELAY)) {
             // Calculate elec_theta_deg increase step of 50Hz output on 10000Hz call
-            elec_theta_deg1 += (FOC_WAVE_AMPL * 360.f) / (MCPWM_TIMER_RESOLUTION_HZ / FOC_WAVE_FREQ);
+            elec_theta_deg1 += (FOC_WAVE_FREQ * 360.f) / (MCPWM_TIMER_RESOLUTION_HZ / MCPWM_PERIOD);
             if (elec_theta_deg1 >= 360) {
                 elec_theta_deg1 -= 360;
             }
@@ -153,7 +163,7 @@ void app_main(void)
 
             // Regular uvw data to (0 ~ (MCPWM_PERIOD/2))
             uvw_duty1[0] = _IQtoF(_IQdiv2(uvw_out1.u)) + (MCPWM_PERIOD / 4);
-            uvw_duty1[1] = _IQtoF(_IQdiv2(uvw_out1.v)) + (MCPWM_PERIOD / 4);
+            uvw_duty1[1] = _IQtoF(_IQdiv2(uvw_out1.v)) + (MCPWM_PERIOD / 4);    
             uvw_duty1[2] = _IQtoF(_IQdiv2(uvw_out1.w)) + (MCPWM_PERIOD / 4);
 
             // output pwm duty
